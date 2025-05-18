@@ -6,8 +6,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calendar } from '@/components/ui/calendar';
 import { useAuth } from '@/context/AuthContext';
 import { Class, User } from '@/types';
-import { format, isEqual, isWeekend, getDay } from 'date-fns';
+import { format, isEqual, isWeekend, getDay, addDays, startOfWeek } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Badge } from '@/components/ui/badge';
 
 // Mock data for class schedules
 const MOCK_CLASSES: Class[] = [
@@ -95,7 +96,7 @@ function filterClassesByUserRole(classes: Class[], user: User | null): Class[] {
 
 export default function ClassSchedule() {
   const { user } = useAuth();
-  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [date, setDate] = useState<Date>(new Date());
   const [displayClasses, setDisplayClasses] = useState<Class[]>([]);
   const [view, setView] = useState<'day' | 'week' | 'month'>('day');
   
@@ -148,10 +149,21 @@ export default function ClassSchedule() {
     setView(value as 'day' | 'week' | 'month');
   };
 
-  const formatSelectedDate = (date?: Date): string => {
-    if (!date) return '';
-    return format(date, "dd 'de' MMMM", { locale: ptBR });
+  const formatSelectedDate = (date: Date): string => {
+    return format(date, "EEEE, dd 'de' MMMM", { locale: ptBR });
   };
+  
+  // Calendar day styles - add badges to days with classes
+  function getDayClassNames(day: Date) {
+    const dayOfWeek = getDay(day);
+    const hasClasses = filteredClasses.some(cls => cls.dayOfWeek === dayOfWeek);
+    
+    if (hasClasses && !isWeekend(day)) {
+      return "relative has-classes";
+    }
+    
+    return "";
+  }
 
   return (
     <div className="animate-fade-in">
@@ -172,9 +184,34 @@ export default function ClassSchedule() {
             <Calendar
               mode="single"
               selected={date}
-              onSelect={setDate}
+              onSelect={(newDate) => newDate && setDate(newDate)}
               className="rounded-md border"
+              modifiers={{
+                hasEvents: (day) => {
+                  const dayOfWeek = getDay(day);
+                  return filteredClasses.some(cls => cls.dayOfWeek === dayOfWeek) && !isWeekend(day);
+                }
+              }}
+              modifiersStyles={{
+                hasEvents: { 
+                  fontWeight: 'bold', 
+                  textDecoration: 'underline', 
+                  color: 'var(--primary)'
+                }
+              }}
             />
+            
+            <div className="mt-4">
+              <p className="text-sm text-muted-foreground mb-2">Legenda:</p>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="bg-accent text-accent-foreground">Hoje</Badge>
+                <span className="text-xs">Dia atual</span>
+              </div>
+              <div className="flex items-center gap-2 mt-1">
+                <Badge variant="outline" className="bg-primary text-primary-foreground">Selecionado</Badge>
+                <span className="text-xs">Dia selecionado</span>
+              </div>
+            </div>
           </CardContent>
         </Card>
         
@@ -189,73 +226,92 @@ export default function ClassSchedule() {
               
               <TabsContent value="day" className="space-y-4">
                 <h3 className="text-lg font-medium">
-                  Aulas do dia {date && formatSelectedDate(date)}
+                  Aulas do dia {formatSelectedDate(date)}
                 </h3>
                 {displayClasses.length > 0 ? (
                   <div className="space-y-3">
                     {displayClasses.map((cls) => (
-                      <div key={cls.id} className="p-3 border rounded-md shadow-sm">
+                      <div key={cls.id} className="p-3 border rounded-md shadow-sm hover:shadow-md transition-shadow">
                         <div className="flex justify-between items-center">
                           <h4 className="font-medium">{cls.courseName}</h4>
-                          <span className="text-sm bg-music-accent text-music-primary px-2 py-1 rounded-md">
+                          <Badge className="bg-music-primary">
                             {cls.startTime} - {cls.endTime}
-                          </span>
+                          </Badge>
                         </div>
-                        <p className="text-sm text-muted-foreground">Professor: {cls.teacherName}</p>
-                        <p className="text-sm text-muted-foreground">Local: {cls.location}</p>
-                        <p className="text-sm text-muted-foreground">Dia: {getDayName(cls.dayOfWeek)}</p>
+                        <div className="mt-2 text-sm grid grid-cols-1 sm:grid-cols-2 gap-1">
+                          <p className="text-muted-foreground">Professor: {cls.teacherName}</p>
+                          <p className="text-muted-foreground">Local: {cls.location}</p>
+                        </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-muted-foreground">Nenhuma aula encontrada para este dia</p>
+                  <div className="py-8 text-center">
+                    <p className="text-muted-foreground">Nenhuma aula encontrada para este dia</p>
+                  </div>
                 )}
               </TabsContent>
               
               <TabsContent value="week" className="space-y-4">
                 <h3 className="text-lg font-medium">Aulas da semana</h3>
-                {displayClasses.length > 0 ? (
-                  <div className="space-y-3">
-                    {displayClasses.map((cls) => (
-                      <div key={cls.id} className="p-3 border rounded-md shadow-sm">
-                        <div className="flex justify-between items-center">
-                          <h4 className="font-medium">{cls.courseName}</h4>
-                          <span className="text-sm bg-music-accent text-music-primary px-2 py-1 rounded-md">
-                            {cls.startTime} - {cls.endTime}
-                          </span>
-                        </div>
-                        <p className="text-sm text-muted-foreground">Professor: {cls.teacherName}</p>
-                        <p className="text-sm text-muted-foreground">Local: {cls.location}</p>
-                        <p className="text-sm text-muted-foreground">Dia: {getDayName(cls.dayOfWeek)}</p>
+                <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+                  {[0, 1, 2, 3, 4].map((dayOffset) => {
+                    const weekday = addDays(startOfWeek(date, { weekStartsOn: 1 }), dayOffset);
+                    const weekdayClasses = filteredClasses.filter(cls => cls.dayOfWeek === getDay(weekday));
+                    
+                    return (
+                      <div key={dayOffset} className="border rounded-md p-3">
+                        <h4 className="font-medium border-b pb-2 mb-2 capitalize">
+                          {format(weekday, 'EEEE', { locale: ptBR })}
+                        </h4>
+                        
+                        {weekdayClasses.length > 0 ? (
+                          <div className="space-y-2">
+                            {weekdayClasses.map(cls => (
+                              <div key={cls.id} className="text-sm border-l-2 border-music-primary pl-2">
+                                <p className="font-medium">{cls.courseName}</p>
+                                <p className="text-xs text-muted-foreground">{cls.startTime} - {cls.endTime}</p>
+                                <p className="text-xs text-muted-foreground">Sala: {cls.location}</p>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-muted-foreground text-center py-4">Sem aulas</p>
+                        )}
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground">Nenhuma aula encontrada para esta semana</p>
-                )}
+                    );
+                  })}
+                </div>
               </TabsContent>
               
               <TabsContent value="month" className="space-y-4">
                 <h3 className="text-lg font-medium">Aulas do mês</h3>
-                {displayClasses.length > 0 ? (
-                  <div className="space-y-3">
-                    {displayClasses.map((cls) => (
-                      <div key={cls.id} className="p-3 border rounded-md shadow-sm">
-                        <div className="flex justify-between items-center">
-                          <h4 className="font-medium">{cls.courseName}</h4>
-                          <span className="text-sm bg-music-accent text-music-primary px-2 py-1 rounded-md">
-                            {cls.startTime} - {cls.endTime}
-                          </span>
-                        </div>
-                        <p className="text-sm text-muted-foreground">Professor: {cls.teacherName}</p>
-                        <p className="text-sm text-muted-foreground">Local: {cls.location}</p>
-                        <p className="text-sm text-muted-foreground">Dia: {getDayName(cls.dayOfWeek)}</p>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {filteredClasses.map((cls) => (
+                    <div key={cls.id} className="p-3 border rounded-md shadow-sm hover:shadow-md transition-shadow">
+                      <div className="flex justify-between items-center">
+                        <h4 className="font-medium">{cls.courseName}</h4>
+                        <Badge variant="outline" className="text-xs">
+                          {getDayName(cls.dayOfWeek)}
+                        </Badge>
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground">Nenhuma aula encontrada para este mês</p>
-                )}
+                      <div className="mt-2 text-sm">
+                        <div className="flex justify-between">
+                          <p className="text-muted-foreground">Horário:</p>
+                          <p>{cls.startTime} - {cls.endTime}</p>
+                        </div>
+                        <div className="flex justify-between">
+                          <p className="text-muted-foreground">Professor:</p>
+                          <p>{cls.teacherName}</p>
+                        </div>
+                        <div className="flex justify-between">
+                          <p className="text-muted-foreground">Local:</p>
+                          <p>{cls.location}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </TabsContent>
             </Tabs>
           </CardContent>
