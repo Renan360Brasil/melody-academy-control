@@ -13,17 +13,30 @@ import Courses from "./pages/Courses";
 import Enrollments from "./pages/Enrollments";
 import Financial from "./pages/Financial";
 import ClassSchedule from "./pages/ClassSchedule";
+import Settings from "./pages/Settings";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+import { toast } from "sonner";
 
 const queryClient = new QueryClient();
 
 // Componente para proteção de rotas
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuth();
+function ProtectedRoute({ 
+  children, 
+  path 
+}: { 
+  children: React.ReactNode,
+  path: string 
+}) {
+  const { isAuthenticated, canAccessRoute } = useAuth();
   
   if (!isAuthenticated) {
     return <Navigate to="/login" />;
+  }
+  
+  if (!canAccessRoute(path)) {
+    toast.error("Você não tem permissão para acessar esta página");
+    return <Navigate to="/" />;
   }
   
   return <>{children}</>;
@@ -35,7 +48,7 @@ function AppRoutes() {
       <Route path="/login" element={<Login />} />
       
       <Route path="/" element={
-        <ProtectedRoute>
+        <ProtectedRoute path="/">
           <Layout>
             <Index />
           </Layout>
@@ -43,7 +56,7 @@ function AppRoutes() {
       } />
       
       <Route path="/students" element={
-        <ProtectedRoute>
+        <ProtectedRoute path="/students">
           <Layout>
             <Students />
           </Layout>
@@ -51,7 +64,7 @@ function AppRoutes() {
       } />
       
       <Route path="/teachers" element={
-        <ProtectedRoute>
+        <ProtectedRoute path="/teachers">
           <Layout>
             <Teachers />
           </Layout>
@@ -59,7 +72,7 @@ function AppRoutes() {
       } />
       
       <Route path="/courses" element={
-        <ProtectedRoute>
+        <ProtectedRoute path="/courses">
           <Layout>
             <Courses />
           </Layout>
@@ -67,7 +80,7 @@ function AppRoutes() {
       } />
       
       <Route path="/enrollments" element={
-        <ProtectedRoute>
+        <ProtectedRoute path="/enrollments">
           <Layout>
             <Enrollments />
           </Layout>
@@ -75,7 +88,7 @@ function AppRoutes() {
       } />
       
       <Route path="/financial" element={
-        <ProtectedRoute>
+        <ProtectedRoute path="/financial">
           <Layout>
             <Financial />
           </Layout>
@@ -83,7 +96,7 @@ function AppRoutes() {
       } />
       
       <Route path="/schedule" element={
-        <ProtectedRoute>
+        <ProtectedRoute path="/schedule">
           <Layout>
             <ClassSchedule />
           </Layout>
@@ -91,14 +104,9 @@ function AppRoutes() {
       } />
       
       <Route path="/settings" element={
-        <ProtectedRoute>
+        <ProtectedRoute path="/settings">
           <Layout>
-            <div className="p-4 text-center">
-              <h1 className="text-xl font-bold">Configurações</h1>
-              <p className="text-muted-foreground mt-2">
-                Esta página será implementada em breve.
-              </p>
-            </div>
+            <Settings />
           </Layout>
         </ProtectedRoute>
       } />

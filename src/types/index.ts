@@ -7,6 +7,8 @@ export interface User {
   email: string;
   role: UserRole;
   avatar?: string;
+  teacherId?: string; // ID for teacher-specific data
+  studentId?: string; // ID for student-specific data
 }
 
 export interface Student {

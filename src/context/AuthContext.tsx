@@ -8,6 +8,7 @@ interface AuthContextType {
   login: (email: string, password: string) => void;
   logout: () => void;
   isAuthenticated: boolean;
+  canAccessRoute: (route: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -26,16 +27,25 @@ const MOCK_USERS: User[] = [
     name: 'Teacher User',
     email: 'teacher@musicschool.com',
     role: 'teacher',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=teacher'
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=teacher',
+    teacherId: 'teacher-1'
   },
   {
     id: '3',
     name: 'Student User',
     email: 'student@musicschool.com',
     role: 'student',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=student'
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=student',
+    studentId: 'student-1'
   }
 ];
+
+// Define route permissions for each role
+const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
+  admin: ['/', '/students', '/teachers', '/courses', '/enrollments', '/financial', '/schedule', '/settings'],
+  teacher: ['/', '/schedule', '/settings'],
+  student: ['/', '/schedule', '/settings']
+};
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -57,11 +67,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     toast.info('Você saiu do sistema');
   };
 
+  const canAccessRoute = (route: string): boolean => {
+    if (!user) return false;
+    return ROLE_PERMISSIONS[user.role].includes(route);
+  };
+
   const value = {
     user,
     login,
     logout,
-    isAuthenticated: !!user
+    isAuthenticated: !!user,
+    canAccessRoute
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

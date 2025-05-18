@@ -20,14 +20,14 @@ import {
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const navItems = [
-  { name: 'Dashboard', href: '/', icon: BookOpen },
-  { name: 'Alunos', href: '/students', icon: Users },
-  { name: 'Professores', href: '/teachers', icon: UserPlus },
-  { name: 'Cursos', href: '/courses', icon: BookOpenCheck },
-  { name: 'Matrículas', href: '/enrollments', icon: Calendar },
-  { name: 'Quadro de Aulas', href: '/schedule', icon: CalendarCheck },
-  { name: 'Financeiro', href: '/financial', icon: CreditCard },
-  { name: 'Configurações', href: '/settings', icon: Settings }
+  { name: 'Dashboard', href: '/', icon: BookOpen, roles: ['admin', 'teacher', 'student'] },
+  { name: 'Alunos', href: '/students', icon: Users, roles: ['admin'] },
+  { name: 'Professores', href: '/teachers', icon: UserPlus, roles: ['admin'] },
+  { name: 'Cursos', href: '/courses', icon: BookOpenCheck, roles: ['admin'] },
+  { name: 'Matrículas', href: '/enrollments', icon: Calendar, roles: ['admin'] },
+  { name: 'Quadro de Aulas', href: '/schedule', icon: CalendarCheck, roles: ['admin', 'teacher', 'student'] },
+  { name: 'Financeiro', href: '/financial', icon: CreditCard, roles: ['admin'] },
+  { name: 'Configurações', href: '/settings', icon: Settings, roles: ['admin', 'teacher', 'student'] }
 ];
 
 export function Sidebar() {
@@ -39,6 +39,11 @@ export function Sidebar() {
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
+
+  // Filter navigation items based on user role
+  const filteredNavItems = navItems.filter(
+    item => user && item.roles.includes(user.role)
+  );
 
   return (
     <>
@@ -87,7 +92,7 @@ export function Sidebar() {
         {/* Navigation */}
         <nav className="px-3 py-4">
           <ul className="space-y-1">
-            {navItems.map((item) => {
+            {filteredNavItems.map((item) => {
               const isActive = location.pathname === item.href;
               return (
                 <li key={item.name}>
