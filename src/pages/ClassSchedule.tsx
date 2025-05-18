@@ -1,11 +1,13 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/ui-custom/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calendar } from '@/components/ui/calendar';
 import { useAuth } from '@/context/AuthContext';
 import { Class, User } from '@/types';
+import { format, isEqual, isWeekend, getDay } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 // Mock data for class schedules
 const MOCK_CLASSES: Class[] = [
@@ -41,6 +43,28 @@ const MOCK_CLASSES: Class[] = [
     endTime: '15:30',
     dayOfWeek: 3, // Wednesday
     location: 'Sala 103'
+  },
+  {
+    id: '4',
+    courseId: 'course-4',
+    courseName: 'Bateria - Iniciante',
+    teacherId: 'teacher-3',
+    teacherName: 'Maria Santos',
+    startTime: '16:00',
+    endTime: '17:30',
+    dayOfWeek: 4, // Thursday
+    location: 'Sala 104'
+  },
+  {
+    id: '5',
+    courseId: 'course-5',
+    courseName: 'Teoria Musical',
+    teacherId: 'teacher-1',
+    teacherName: 'Teacher User',
+    startTime: '09:00',
+    endTime: '10:30',
+    dayOfWeek: 5, // Friday
+    location: 'Sala 105'
   }
 ];
 
@@ -72,14 +96,61 @@ function filterClassesByUserRole(classes: Class[], user: User | null): Class[] {
 export default function ClassSchedule() {
   const { user } = useAuth();
   const [date, setDate] = useState<Date | undefined>(new Date());
+  const [displayClasses, setDisplayClasses] = useState<Class[]>([]);
+  const [view, setView] = useState<'day' | 'week' | 'month'>('day');
   
   // Filter classes based on user role
   const filteredClasses = filterClassesByUserRole(MOCK_CLASSES, user);
+  
+  // Filter classes based on the selected date and view
+  useEffect(() => {
+    if (!date) {
+      setDisplayClasses([]);
+      return;
+    }
+
+    const selectedDayOfWeek = getDay(date);
+    
+    let classesToDisplay: Class[] = [];
+    
+    switch (view) {
+      case 'day':
+        // If weekend, show no classes
+        if (isWeekend(date)) {
+          classesToDisplay = [];
+        } else {
+          // Filter classes for the current day of week
+          classesToDisplay = filteredClasses.filter(cls => cls.dayOfWeek === selectedDayOfWeek);
+        }
+        break;
+        
+      case 'week':
+        // Show all classes for the week
+        classesToDisplay = filteredClasses;
+        break;
+        
+      case 'month':
+        // Show all classes
+        classesToDisplay = filteredClasses;
+        break;
+    }
+    
+    setDisplayClasses(classesToDisplay);
+  }, [date, filteredClasses, view]);
   
   // Get day name
   const getDayName = (dayOfWeek: number): string => {
     const days = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
     return days[dayOfWeek];
+  };
+
+  const handleTabChange = (value: string) => {
+    setView(value as 'day' | 'week' | 'month');
+  };
+
+  const formatSelectedDate = (date?: Date): string => {
+    if (!date) return '';
+    return format(date, "dd 'de' MMMM", { locale: ptBR });
   };
 
   return (
@@ -109,7 +180,7 @@ export default function ClassSchedule() {
         
         <Card className="md:col-span-2">
           <CardContent className="pt-6">
-            <Tabs defaultValue="day" className="space-y-4">
+            <Tabs defaultValue="day" className="space-y-4" onValueChange={handleTabChange}>
               <TabsList>
                 <TabsTrigger value="day">Dia</TabsTrigger>
                 <TabsTrigger value="week">Semana</TabsTrigger>
@@ -117,10 +188,12 @@ export default function ClassSchedule() {
               </TabsList>
               
               <TabsContent value="day" className="space-y-4">
-                <h3 className="text-lg font-medium">Aulas do dia</h3>
-                {filteredClasses.length > 0 ? (
+                <h3 className="text-lg font-medium">
+                  Aulas do dia {date && formatSelectedDate(date)}
+                </h3>
+                {displayClasses.length > 0 ? (
                   <div className="space-y-3">
-                    {filteredClasses.map((cls) => (
+                    {displayClasses.map((cls) => (
                       <div key={cls.id} className="p-3 border rounded-md shadow-sm">
                         <div className="flex justify-between items-center">
                           <h4 className="font-medium">{cls.courseName}</h4>
@@ -135,15 +208,15 @@ export default function ClassSchedule() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-muted-foreground">Nenhuma aula encontrada</p>
+                  <p className="text-muted-foreground">Nenhuma aula encontrada para este dia</p>
                 )}
               </TabsContent>
               
               <TabsContent value="week" className="space-y-4">
                 <h3 className="text-lg font-medium">Aulas da semana</h3>
-                {filteredClasses.length > 0 ? (
+                {displayClasses.length > 0 ? (
                   <div className="space-y-3">
-                    {filteredClasses.map((cls) => (
+                    {displayClasses.map((cls) => (
                       <div key={cls.id} className="p-3 border rounded-md shadow-sm">
                         <div className="flex justify-between items-center">
                           <h4 className="font-medium">{cls.courseName}</h4>
@@ -158,15 +231,15 @@ export default function ClassSchedule() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-muted-foreground">Nenhuma aula encontrada</p>
+                  <p className="text-muted-foreground">Nenhuma aula encontrada para esta semana</p>
                 )}
               </TabsContent>
               
               <TabsContent value="month" className="space-y-4">
                 <h3 className="text-lg font-medium">Aulas do mês</h3>
-                {filteredClasses.length > 0 ? (
+                {displayClasses.length > 0 ? (
                   <div className="space-y-3">
-                    {filteredClasses.map((cls) => (
+                    {displayClasses.map((cls) => (
                       <div key={cls.id} className="p-3 border rounded-md shadow-sm">
                         <div className="flex justify-between items-center">
                           <h4 className="font-medium">{cls.courseName}</h4>
@@ -181,7 +254,7 @@ export default function ClassSchedule() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-muted-foreground">Nenhuma aula encontrada</p>
+                  <p className="text-muted-foreground">Nenhuma aula encontrada para este mês</p>
                 )}
               </TabsContent>
             </Tabs>

@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { Student } from '@/types';
+import { toast } from 'sonner';
 
 // Mock data
 const mockStudents: Student[] = [
@@ -104,6 +105,25 @@ export function useStudents() {
 
   const addStudent = (newStudent: Student) => {
     setStudents(prev => [newStudent, ...prev]);
+    toast.success(`Aluno ${newStudent.name} adicionado com sucesso!`);
+  };
+
+  const updateStudent = (updatedStudent: Student) => {
+    // In a real application, this would make an API call
+    setStudents(prev => 
+      prev.map(student => 
+        student.id === updatedStudent.id ? updatedStudent : student
+      )
+    );
+    toast.success(`Aluno ${updatedStudent.name} atualizado com sucesso!`);
+  };
+
+  const deleteStudent = (studentToDelete: Student) => {
+    // In a real application, this would make an API call
+    setStudents(prev => 
+      prev.filter(student => student.id !== studentToDelete.id)
+    );
+    toast.success(`Aluno ${studentToDelete.name} excluído com sucesso!`);
   };
 
   return {
@@ -114,6 +134,8 @@ export function useStudents() {
     setSearchQuery,
     statusFilter,
     setStatusFilter,
-    addStudent
+    addStudent,
+    updateStudent,
+    deleteStudent
   };
 }

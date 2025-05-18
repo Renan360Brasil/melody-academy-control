@@ -5,6 +5,8 @@ import { AddStudentDialog } from '@/components/students/AddStudentDialog';
 import { StudentsFilter } from '@/components/students/StudentsFilter';
 import { StudentsTable } from '@/components/students/StudentsTable';
 import { useStudents } from '@/hooks/use-students';
+import { Student } from '@/types';
+import { toast } from 'sonner';
 
 export default function Students() {
   const {
@@ -15,7 +17,9 @@ export default function Students() {
     statusFilter,
     setStatusFilter,
     students,
-    addStudent
+    addStudent,
+    updateStudent,
+    deleteStudent
   } = useStudents();
 
   return (
@@ -39,6 +43,8 @@ export default function Students() {
           <StudentsTable 
             students={filteredStudents}
             isLoading={isLoading}
+            onEditStudent={updateStudent}
+            onDeleteStudent={deleteStudent}
           />
           
           <div className="flex justify-end mt-4">

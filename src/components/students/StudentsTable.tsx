@@ -5,19 +5,62 @@ import { Button } from '@/components/ui/button';
 import { User } from 'lucide-react';
 import { Student } from '@/types';
 import { StudentDetailsDrawer } from './StudentDetailsDrawer';
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { toast } from 'sonner';
 
 interface StudentsTableProps {
   students: Student[];
   isLoading: boolean;
+  onEditStudent?: (student: Student) => void;
+  onDeleteStudent?: (student: Student) => void;
 }
 
-export function StudentsTable({ students, isLoading }: StudentsTableProps) {
+export function StudentsTable({ 
+  students, 
+  isLoading,
+  onEditStudent,
+  onDeleteStudent
+}: StudentsTableProps) {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const handleDetailsClick = (student: Student) => {
     setSelectedStudent(student);
     setIsDrawerOpen(true);
+  };
+
+  const handleEdit = (student: Student) => {
+    setIsDrawerOpen(false);
+    if (onEditStudent) {
+      onEditStudent(student);
+    } else {
+      // Fallback if no handler is provided
+      toast.info("Funcionalidade de edição em desenvolvimento");
+    }
+  };
+
+  const handleDelete = () => {
+    if (selectedStudent && onDeleteStudent) {
+      onDeleteStudent(selectedStudent);
+      setIsDeleteDialogOpen(false);
+      toast.success(`Aluno ${selectedStudent.name} excluído com sucesso`);
+    }
+  };
+
+  const openDeleteDialog = (student: Student) => {
+    setSelectedStudent(student);
+    setIsDrawerOpen(false);
+    setIsDeleteDialogOpen(true);
   };
 
   if (isLoading) {
@@ -116,7 +159,26 @@ export function StudentsTable({ students, isLoading }: StudentsTableProps) {
         student={selectedStudent}
         open={isDrawerOpen}
         onOpenChange={setIsDrawerOpen}
+        onEdit={handleEdit}
+        onDelete={openDeleteDialog}
       />
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o aluno {selectedStudent?.name}? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
