@@ -18,11 +18,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     // Check if theme is stored in localStorage
     const savedTheme = localStorage.getItem('theme') as Theme | null;
     
+    // Always default to light mode if no saved theme
     if (savedTheme) {
       setTheme(savedTheme);
-    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      // Use system preference if no saved theme
-      setTheme('dark');
+    } else {
+      // Set to light mode regardless of system preference
+      setTheme('light');
     }
   }, []);
 

@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -11,6 +10,11 @@ export function SystemSettings() {
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [autoBackup, setAutoBackup] = useState(true);
   const [darkMode, setDarkMode] = useState(theme === 'dark');
+  
+  // Keep darkMode state in sync with theme
+  useEffect(() => {
+    setDarkMode(theme === 'dark');
+  }, [theme]);
   
   const handleSaveSettings = (e: React.FormEvent) => {
     e.preventDefault();
