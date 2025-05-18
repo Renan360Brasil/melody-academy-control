@@ -96,7 +96,7 @@ export default function Students() {
     address: '',
     birthDate: '',
     guardian: '',
-    status: 'active'
+    status: 'active' as 'active' | 'inactive' | 'suspended' // Fix 1: Type assertion to ensure status is properly typed
   });
 
   useEffect(() => {
@@ -136,7 +136,10 @@ export default function Students() {
   };
 
   const handleStatusChange = (value: string) => {
-    setNewStudent(prev => ({ ...prev, status: value as 'active' | 'inactive' | 'suspended' }));
+    setNewStudent(prev => ({ 
+      ...prev, 
+      status: value as 'active' | 'inactive' | 'suspended'
+    }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -161,7 +164,7 @@ export default function Students() {
       address: '',
       birthDate: '',
       guardian: '',
-      status: 'active'
+      status: 'active' as 'active' | 'inactive' | 'suspended'
     });
     
     setIsDialogOpen(false);
@@ -285,13 +288,16 @@ export default function Students() {
         <CardContent className="pt-6">
           <div className="flex flex-col sm:flex-row gap-4 justify-between mb-6">
             <div className="flex items-center w-full sm:max-w-sm">
-              <Input
-                placeholder="Buscar por nome ou e-mail"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full"
-                icon={<Search className="h-4 w-4" />}
-              />
+              {/* Fix 2: Remove the icon prop and use a container with positioning instead */}
+              <div className="relative w-full">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por nome ou e-mail"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-8"
+                />
+              </div>
             </div>
             <Select
               value={statusFilter}
