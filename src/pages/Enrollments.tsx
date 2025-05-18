@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/ui-custom/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -23,6 +22,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { EnrollmentDetailsDrawer } from '@/components/enrollments/EnrollmentDetailsDrawer';
 
 // Mock data for enrollments
 const mockEnrollments: Enrollment[] = [
@@ -91,6 +91,9 @@ export default function Enrollments() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [selectedEnrollment, setSelectedEnrollment] = useState<Enrollment | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   
   // State for form inputs
   const [newEnrollment, setNewEnrollment] = useState({
@@ -198,6 +201,49 @@ export default function Enrollments() {
     setNewEnrollment(prev => ({ ...prev, installments }));
   };
 
+  const handleViewDetails = (enrollment: Enrollment) => {
+    setSelectedEnrollment(enrollment);
+    setIsDrawerOpen(true);
+  };
+
+  const handleEdit = (enrollment: Enrollment) => {
+    setSelectedEnrollment(enrollment);
+    setIsEditMode(true);
+    
+    // Pre-populate form with enrollment data
+    setNewEnrollment({
+      studentId: enrollment.studentId,
+      studentName: enrollment.studentName,
+      courseId: enrollment.courseId,
+      courseName: enrollment.courseName,
+      startDate: enrollment.startDate,
+      endDate: enrollment.endDate,
+      price: enrollment.price,
+      installments: enrollment.installments,
+      status: enrollment.status
+    });
+    
+    // Find and set the course for calculations
+    const course = mockCourses.find(c => c.id === enrollment.courseId);
+    if (course) {
+      setSelectedCourse(course);
+    }
+    
+    // Set the date
+    setStartDate(new Date(enrollment.startDate));
+    
+    setIsDrawerOpen(false);
+    setIsDialogOpen(true);
+  };
+
+  const handleDelete = (enrollment: Enrollment) => {
+    // Filter out the enrollment to be deleted
+    const updatedEnrollments = enrollments.filter(e => e.id !== enrollment.id);
+    setEnrollments(updatedEnrollments);
+    setIsDrawerOpen(false);
+    toast.success(`Matrícula de ${enrollment.studentName} em ${enrollment.courseName} excluída com sucesso!`);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -205,16 +251,32 @@ export default function Enrollments() {
       toast.error('Preencha todos os campos obrigatórios');
       return;
     }
-    
-    // Create new enrollment with unique ID and current date
-    const newEnrollmentWithId: Enrollment = {
-      ...newEnrollment,
-      id: `new-${Date.now()}`,
-      createdAt: new Date().toISOString().split('T')[0]
-    };
-    
-    setEnrollments(prev => [newEnrollmentWithId, ...prev]);
-    toast.success('Matrícula realizada com sucesso!');
+
+    if (isEditMode && selectedEnrollment) {
+      // Update existing enrollment
+      const updatedEnrollments = enrollments.map(enrollment => 
+        enrollment.id === selectedEnrollment.id 
+          ? { 
+              ...selectedEnrollment, 
+              ...newEnrollment
+            } 
+          : enrollment
+      );
+      
+      setEnrollments(updatedEnrollments);
+      toast.success(`Matrícula de ${newEnrollment.studentName} atualizada com sucesso!`);
+      setIsEditMode(false);
+    } else {
+      // Create new enrollment with unique ID and current date
+      const newEnrollmentWithId: Enrollment = {
+        ...newEnrollment,
+        id: `new-${Date.now()}`,
+        createdAt: new Date().toISOString().split('T')[0]
+      };
+      
+      setEnrollments(prev => [newEnrollmentWithId, ...prev]);
+      toast.success('Matrícula realizada com sucesso!');
+    }
     
     // Reset form
     setNewEnrollment({
@@ -254,7 +316,7 @@ export default function Enrollments() {
       >
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button onClick={() => setIsEditMode(false)}>
               <Plus className="mr-2 h-4 w-4" />
               Nova Matrícula
             </Button>
@@ -262,9 +324,11 @@ export default function Enrollments() {
           <DialogContent className="sm:max-w-[500px]">
             <form onSubmit={handleSubmit}>
               <DialogHeader>
-                <DialogTitle>Realizar Nova Matrícula</DialogTitle>
+                <DialogTitle>{isEditMode ? 'Editar Matrícula' : 'Realizar Nova Matrícula'}</DialogTitle>
                 <DialogDescription>
-                  Vincule um aluno a um curso específico.
+                  {isEditMode 
+                    ? 'Atualize as informações da matrícula.'
+                    : 'Vincule um aluno a um curso específico.'}
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
@@ -395,7 +459,7 @@ export default function Enrollments() {
                 )}
               </div>
               <DialogFooter>
-                <Button type="submit">Confirmar Matrícula</Button>
+                <Button type="submit">{isEditMode ? 'Atualizar' : 'Confirmar Matrícula'}</Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -489,7 +553,13 @@ export default function Enrollments() {
                             </div>
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button variant="ghost" size="sm">Detalhes</Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => handleViewDetails(enrollment)}
+                            >
+                              Detalhes
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))
@@ -506,6 +576,14 @@ export default function Enrollments() {
           )}
         </CardContent>
       </Card>
+
+      <EnrollmentDetailsDrawer 
+        enrollment={selectedEnrollment}
+        open={isDrawerOpen}
+        onOpenChange={setIsDrawerOpen}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+      />
     </div>
   );
 }

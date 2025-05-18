@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/ui-custom/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -19,6 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { BookOpenCheck, Plus, Search } from 'lucide-react';
 import { Course, Teacher } from '@/types';
 import { toast } from 'sonner';
+import { CourseDetailsDrawer } from '@/components/courses/CourseDetailsDrawer';
 
 // Mock data for courses
 const mockCourses: Course[] = [
@@ -81,6 +81,9 @@ export default function Courses() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   
   // State for form inputs
   const [newCourse, setNewCourse] = useState({
@@ -142,6 +145,37 @@ export default function Courses() {
     }
   };
 
+  const handleViewDetails = (course: Course) => {
+    setSelectedCourse(course);
+    setIsDrawerOpen(true);
+  };
+
+  const handleEdit = (course: Course) => {
+    setSelectedCourse(course);
+    setIsEditMode(true);
+    
+    // Pre-populate form with course data
+    setNewCourse({
+      name: course.name,
+      weeklyHours: course.weeklyHours,
+      durationWeeks: course.durationWeeks,
+      price: course.price,
+      teacherId: course.teacherId,
+      teacherName: course.teacherName
+    });
+    
+    setIsDrawerOpen(false);
+    setIsDialogOpen(true);
+  };
+
+  const handleDelete = (course: Course) => {
+    // Filter out the course to be deleted
+    const updatedCourses = courses.filter(c => c.id !== course.id);
+    setCourses(updatedCourses);
+    setIsDrawerOpen(false);
+    toast.success(`Curso ${course.name} excluído com sucesso!`);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -149,17 +183,33 @@ export default function Courses() {
       toast.error('Selecione um professor para o curso');
       return;
     }
-    
-    // Create new course with unique ID and current date
-    const newCourseWithId: Course = {
-      ...newCourse,
-      id: `new-${Date.now()}`,
-      students: 0,
-      createdAt: new Date().toISOString().split('T')[0]
-    };
-    
-    setCourses(prev => [newCourseWithId, ...prev]);
-    toast.success('Curso adicionado com sucesso!');
+
+    if (isEditMode && selectedCourse) {
+      // Update existing course
+      const updatedCourses = courses.map(course => 
+        course.id === selectedCourse.id 
+          ? { 
+              ...selectedCourse, 
+              ...newCourse
+            } 
+          : course
+      );
+      
+      setCourses(updatedCourses);
+      toast.success(`Curso ${newCourse.name} atualizado com sucesso!`);
+      setIsEditMode(false);
+    } else {
+      // Create new course with unique ID and current date
+      const newCourseWithId: Course = {
+        ...newCourse,
+        id: `new-${Date.now()}`,
+        students: 0,
+        createdAt: new Date().toISOString().split('T')[0]
+      };
+      
+      setCourses(prev => [newCourseWithId, ...prev]);
+      toast.success('Curso adicionado com sucesso!');
+    }
     
     // Reset form
     setNewCourse({
@@ -189,7 +239,7 @@ export default function Courses() {
       >
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button onClick={() => setIsEditMode(false)}>
               <Plus className="mr-2 h-4 w-4" />
               Novo Curso
             </Button>
@@ -197,9 +247,11 @@ export default function Courses() {
           <DialogContent className="sm:max-w-[500px]">
             <form onSubmit={handleSubmit}>
               <DialogHeader>
-                <DialogTitle>Adicionar Novo Curso</DialogTitle>
+                <DialogTitle>{isEditMode ? 'Editar Curso' : 'Adicionar Novo Curso'}</DialogTitle>
                 <DialogDescription>
-                  Preencha as informações do curso. Clique em salvar quando finalizar.
+                  {isEditMode 
+                    ? 'Atualize as informações do curso.' 
+                    : 'Preencha as informações do curso. Clique em salvar quando finalizar.'}
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
@@ -281,7 +333,7 @@ export default function Courses() {
                 </div>
               </div>
               <DialogFooter>
-                <Button type="submit">Salvar</Button>
+                <Button type="submit">{isEditMode ? 'Atualizar' : 'Salvar'}</Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -353,7 +405,13 @@ export default function Courses() {
                             {formatCurrency(course.price)}
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button variant="ghost" size="sm">Detalhes</Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => handleViewDetails(course)}
+                            >
+                              Detalhes
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))
@@ -370,6 +428,14 @@ export default function Courses() {
           )}
         </CardContent>
       </Card>
+
+      <CourseDetailsDrawer 
+        course={selectedCourse}
+        open={isDrawerOpen}
+        onOpenChange={setIsDrawerOpen}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+      />
     </div>
   );
 }

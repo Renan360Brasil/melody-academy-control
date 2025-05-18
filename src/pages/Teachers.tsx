@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/ui-custom/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -19,6 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, Search, UserPlus } from 'lucide-react';
 import { Teacher } from '@/types';
 import { toast } from 'sonner';
+import { TeacherDetailsDrawer } from '@/components/teachers/TeacherDetailsDrawer';
 
 // Mock data for teachers
 const mockTeachers: Teacher[] = [
@@ -85,6 +85,9 @@ export default function Teachers() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   
   // State for form inputs
   const [newTeacher, setNewTeacher] = useState({
@@ -193,6 +196,36 @@ export default function Teachers() {
     }));
   };
 
+  const handleViewDetails = (teacher: Teacher) => {
+    setSelectedTeacher(teacher);
+    setIsDrawerOpen(true);
+  };
+
+  const handleEdit = (teacher: Teacher) => {
+    setSelectedTeacher(teacher);
+    setIsEditMode(true);
+    
+    // Pre-populate form with teacher data
+    setNewTeacher({
+      name: teacher.name,
+      email: teacher.email,
+      phone: teacher.phone,
+      instruments: [...teacher.instruments],
+      availability: [...teacher.availability]
+    });
+    
+    setIsDrawerOpen(false);
+    setIsDialogOpen(true);
+  };
+
+  const handleDelete = (teacher: Teacher) => {
+    // Filter out the teacher to be deleted
+    const updatedTeachers = teachers.filter(t => t.id !== teacher.id);
+    setTeachers(updatedTeachers);
+    setIsDrawerOpen(false);
+    toast.success(`Professor ${teacher.name} excluído com sucesso!`);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -205,17 +238,33 @@ export default function Teachers() {
       toast.error('Adicione pelo menos um horário de disponibilidade');
       return;
     }
-    
-    // Create new teacher with unique ID and current date
-    const newTeacherWithId: Teacher = {
-      ...newTeacher,
-      id: `new-${Date.now()}`,
-      courses: [],
-      createdAt: new Date().toISOString().split('T')[0]
-    };
-    
-    setTeachers(prev => [newTeacherWithId, ...prev]);
-    toast.success('Professor adicionado com sucesso!');
+
+    if (isEditMode && selectedTeacher) {
+      // Update existing teacher
+      const updatedTeachers = teachers.map(teacher => 
+        teacher.id === selectedTeacher.id 
+          ? { 
+              ...selectedTeacher, 
+              ...newTeacher
+            } 
+          : teacher
+      );
+      
+      setTeachers(updatedTeachers);
+      toast.success(`Professor ${newTeacher.name} atualizado com sucesso!`);
+      setIsEditMode(false);
+    } else {
+      // Create new teacher with unique ID and current date
+      const newTeacherWithId: Teacher = {
+        ...newTeacher,
+        id: `new-${Date.now()}`,
+        courses: [],
+        createdAt: new Date().toISOString().split('T')[0]
+      };
+      
+      setTeachers(prev => [newTeacherWithId, ...prev]);
+      toast.success('Professor adicionado com sucesso!');
+    }
     
     // Reset form
     setNewTeacher({
@@ -237,7 +286,7 @@ export default function Teachers() {
       >
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button onClick={() => setIsEditMode(false)}>
               <Plus className="mr-2 h-4 w-4" />
               Novo Professor
             </Button>
@@ -245,9 +294,11 @@ export default function Teachers() {
           <DialogContent className="sm:max-w-[600px]">
             <form onSubmit={handleSubmit}>
               <DialogHeader>
-                <DialogTitle>Adicionar Novo Professor</DialogTitle>
+                <DialogTitle>{isEditMode ? 'Editar Professor' : 'Adicionar Novo Professor'}</DialogTitle>
                 <DialogDescription>
-                  Preencha as informações do professor. Adicione instrumentos e disponibilidade de horários.
+                  {isEditMode 
+                    ? 'Atualize as informações do professor.'
+                    : 'Preencha as informações do professor. Adicione instrumentos e disponibilidade de horários.'}
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
@@ -393,7 +444,7 @@ export default function Teachers() {
                 </div>
               </div>
               <DialogFooter>
-                <Button type="submit">Salvar</Button>
+                <Button type="submit">{isEditMode ? 'Atualizar' : 'Salvar'}</Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -469,7 +520,13 @@ export default function Teachers() {
                               : "Nenhum curso"}
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button variant="ghost" size="sm">Detalhes</Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => handleViewDetails(teacher)}
+                            >
+                              Detalhes
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))
@@ -486,6 +543,14 @@ export default function Teachers() {
           )}
         </CardContent>
       </Card>
+
+      <TeacherDetailsDrawer 
+        teacher={selectedTeacher}
+        open={isDrawerOpen}
+        onOpenChange={setIsDrawerOpen}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+      />
     </div>
   );
 }
