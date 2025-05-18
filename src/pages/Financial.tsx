@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/ui-custom/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -29,6 +28,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import { PaymentDetailsDrawer } from '@/components/financial/PaymentDetailsDrawer';
 
 // Mock data for payments
 const mockPayments: Payment[] = [
@@ -133,6 +133,7 @@ export default function Financial() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
+  const [isDetailsDrawerOpen, setIsDetailsDrawerOpen] = useState(false);
   
   // State for new payment
   const [newPayment, setNewPayment] = useState({
@@ -316,6 +317,11 @@ export default function Financial() {
   const openPaymentDialog = (payment: Payment) => {
     setSelectedPayment(payment);
     setIsPaymentDialogOpen(true);
+  };
+
+  const handleDetailsClick = (payment: Payment) => {
+    setSelectedPayment(payment);
+    setIsDetailsDrawerOpen(true);
   };
 
   const formatCurrency = (value: number) => {
@@ -633,15 +639,24 @@ export default function Financial() {
                                   </div>
                                 </TableCell>
                                 <TableCell className="text-right">
-                                  {payment.status !== 'paid' && (
+                                  <div className="flex gap-2 justify-end">
+                                    {payment.status !== 'paid' && (
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm"
+                                        onClick={() => openPaymentDialog(payment)}
+                                      >
+                                        Registrar Pagamento
+                                      </Button>
+                                    )}
                                     <Button 
-                                      variant="outline" 
+                                      variant="ghost" 
                                       size="sm"
-                                      onClick={() => openPaymentDialog(payment)}
+                                      onClick={() => handleDetailsClick(payment)}
                                     >
-                                      Registrar Pagamento
+                                      Detalhes
                                     </Button>
-                                  )}
+                                  </div>
                                 </TableCell>
                               </TableRow>
                             ))
@@ -672,6 +687,12 @@ export default function Financial() {
           </TabsContent>
         </Tabs>
       </div>
+      
+      <PaymentDetailsDrawer
+        payment={selectedPayment}
+        open={isDetailsDrawerOpen}
+        onOpenChange={setIsDetailsDrawerOpen}
+      />
     </div>
   );
 }
