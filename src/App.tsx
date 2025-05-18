@@ -8,6 +8,11 @@ import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { Layout } from "@/components/layout/Layout";
 import Index from "./pages/Index";
 import Students from "./pages/Students";
+import Teachers from "./pages/Teachers";
+import Courses from "./pages/Courses";
+import Enrollments from "./pages/Enrollments";
+import Financial from "./pages/Financial";
+import ClassSchedule from "./pages/ClassSchedule";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
@@ -45,16 +50,10 @@ function AppRoutes() {
         </ProtectedRoute>
       } />
       
-      {/* Adicione outras rotas protegidas aqui */}
       <Route path="/teachers" element={
         <ProtectedRoute>
           <Layout>
-            <div className="p-4 text-center">
-              <h1 className="text-xl font-bold">Página de Professores</h1>
-              <p className="text-muted-foreground mt-2">
-                Esta página será implementada em breve.
-              </p>
-            </div>
+            <Teachers />
           </Layout>
         </ProtectedRoute>
       } />
@@ -62,12 +61,7 @@ function AppRoutes() {
       <Route path="/courses" element={
         <ProtectedRoute>
           <Layout>
-            <div className="p-4 text-center">
-              <h1 className="text-xl font-bold">Página de Cursos</h1>
-              <p className="text-muted-foreground mt-2">
-                Esta página será implementada em breve.
-              </p>
-            </div>
+            <Courses />
           </Layout>
         </ProtectedRoute>
       } />
@@ -75,12 +69,7 @@ function AppRoutes() {
       <Route path="/enrollments" element={
         <ProtectedRoute>
           <Layout>
-            <div className="p-4 text-center">
-              <h1 className="text-xl font-bold">Página de Matrículas</h1>
-              <p className="text-muted-foreground mt-2">
-                Esta página será implementada em breve.
-              </p>
-            </div>
+            <Enrollments />
           </Layout>
         </ProtectedRoute>
       } />
@@ -88,12 +77,15 @@ function AppRoutes() {
       <Route path="/financial" element={
         <ProtectedRoute>
           <Layout>
-            <div className="p-4 text-center">
-              <h1 className="text-xl font-bold">Página Financeira</h1>
-              <p className="text-muted-foreground mt-2">
-                Esta página será implementada em breve.
-              </p>
-            </div>
+            <Financial />
+          </Layout>
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/schedule" element={
+        <ProtectedRoute>
+          <Layout>
+            <ClassSchedule />
           </Layout>
         </ProtectedRoute>
       } />

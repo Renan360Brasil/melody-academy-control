@@ -4,7 +4,19 @@ import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Calendar, Users, UserPlus, BookOpenCheck, CreditCard, Settings, Piano, Menu, X } from 'lucide-react';
+import { 
+  BookOpen, 
+  Calendar, 
+  Users, 
+  UserPlus, 
+  BookOpenCheck, 
+  CreditCard, 
+  Settings, 
+  Piano, 
+  Menu, 
+  X, 
+  CalendarCheck 
+} from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const navItems = [
@@ -13,6 +25,7 @@ const navItems = [
   { name: 'Professores', href: '/teachers', icon: UserPlus },
   { name: 'Cursos', href: '/courses', icon: BookOpenCheck },
   { name: 'Matrículas', href: '/enrollments', icon: Calendar },
+  { name: 'Quadro de Aulas', href: '/schedule', icon: CalendarCheck },
   { name: 'Financeiro', href: '/financial', icon: CreditCard },
   { name: 'Configurações', href: '/settings', icon: Settings }
 ];
