@@ -1,4 +1,3 @@
-
 export type UserRole = 'admin' | 'teacher' | 'student';
 
 export interface User {
@@ -87,6 +86,11 @@ export interface Class {
   endTime: string;
   dayOfWeek: number;
   location: string;
+  isOneTime?: boolean;         // Flag for one-time classes
+  date?: string;               // Date for one-time classes
+  attended?: boolean;          // Whether the class was attended
+  rescheduledFrom?: string;    // ID of the original class if rescheduled
+  rescheduledTo?: string;      // ID of the rescheduled class
 }
 
 export interface DashboardStats {
