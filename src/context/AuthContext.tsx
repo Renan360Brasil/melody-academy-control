@@ -41,16 +41,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    console.log('Configurando auth listener...');
+    
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state change:', event, session);
+        console.log('Auth event:', event, session?.user?.email);
         setSession(session);
         
         if (session?.user) {
           // Fetch user profile from our database
           setTimeout(async () => {
             try {
+              console.log('Buscando perfil para usuário:', session.user.id);
               const { data: profile, error } = await supabase
                 .from('profiles')
                 .select('*')
@@ -58,12 +61,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 .single();
 
               if (error) {
-                console.error('Error fetching profile:', error);
-                toast.error('Erro ao carregar perfil do usuário');
+                console.error('Erro ao buscar perfil:', error);
+                if (error.code === 'PGRST116') {
+                  console.log('Perfil não encontrado, o trigger deve criar automaticamente');
+                } else {
+                  toast.error('Erro ao carregar perfil do usuário');
+                }
                 return;
               }
 
               if (profile) {
+                console.log('Perfil encontrado:', profile);
                 const authUser: AuthUser = {
                   id: profile.id,
                   name: profile.name,
@@ -94,13 +102,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 }
 
                 setUser(authUser);
+                console.log('Usuário autenticado:', authUser);
               }
             } catch (error) {
-              console.error('Error in auth state change:', error);
+              console.error('Erro no auth state change:', error);
             }
-          }, 0);
+          }, 100);
         } else {
           setUser(null);
+          console.log('Usuário deslogado');
         }
         
         setIsLoading(false);
@@ -109,34 +119,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      // The onAuthStateChange will handle setting the session and user
+      console.log('Sessão existente encontrada:', session?.user?.email);
       if (!session) {
         setIsLoading(false);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      console.log('Removendo auth listener');
+      subscription.unsubscribe();
+    };
   }, []);
 
   const login = async (email: string, password: string): Promise<{ error?: string }> => {
     try {
       setIsLoading(true);
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
+      console.log('Iniciando login para:', email);
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
         password
       });
 
       if (error) {
-        console.error('Login error:', error);
-        toast.error('Credenciais inválidas');
+        console.error('Erro de login:', error);
+        let errorMessage = 'Erro ao fazer login';
+        
+        if (error.message.includes('Invalid login credentials')) {
+          errorMessage = 'Email ou senha incorretos';
+        } else if (error.message.includes('Email not confirmed')) {
+          errorMessage = 'Email não confirmado';
+        }
+        
+        toast.error(errorMessage);
         return { error: error.message };
       }
 
-      toast.success('Login realizado com sucesso!');
+      if (data.user) {
+        console.log('Login bem-sucedido para:', data.user.email);
+        toast.success('Login realizado com sucesso!');
+      }
+      
       return {};
     } catch (error: any) {
-      console.error('Login error:', error);
-      toast.error('Erro ao fazer login');
+      console.error('Erro inesperado no login:', error);
+      toast.error('Erro inesperado ao fazer login');
       return { error: error.message };
     } finally {
       setIsLoading(false);
@@ -146,31 +173,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signUp = async (email: string, password: string, name: string, role: UserRole): Promise<{ error?: string }> => {
     try {
       setIsLoading(true);
+      console.log('Iniciando cadastro para:', email, 'como', role);
+      
       const redirectUrl = `${window.location.origin}/`;
       
-      const { error } = await supabase.auth.signUp({
-        email,
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim(),
         password,
         options: {
           emailRedirectTo: redirectUrl,
           data: {
-            name,
+            name: name.trim(),
             role
           }
         }
       });
 
       if (error) {
-        console.error('SignUp error:', error);
-        toast.error('Erro ao criar conta');
+        console.error('Erro no cadastro:', error);
+        let errorMessage = 'Erro ao criar conta';
+        
+        if (error.message.includes('already registered')) {
+          errorMessage = 'Este email já está cadastrado';
+        } else if (error.message.includes('Password should be')) {
+          errorMessage = 'A senha deve ter pelo menos 6 caracteres';
+        }
+        
+        toast.error(errorMessage);
         return { error: error.message };
       }
 
-      toast.success('Conta criada com sucesso! Verifique seu email.');
+      if (data.user) {
+        console.log('Cadastro bem-sucedido para:', data.user.email);
+        
+        // Se o usuário foi confirmado automaticamente, já faz login
+        if (data.user.email_confirmed_at) {
+          toast.success('Conta criada e login realizado com sucesso!');
+        } else {
+          toast.success('Conta criada! Verifique seu email para confirmar.');
+        }
+      }
+      
       return {};
     } catch (error: any) {
-      console.error('SignUp error:', error);
-      toast.error('Erro ao criar conta');
+      console.error('Erro inesperado no cadastro:', error);
+      toast.error('Erro inesperado ao criar conta');
       return { error: error.message };
     } finally {
       setIsLoading(false);
@@ -179,12 +226,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
+      console.log('Fazendo logout...');
       await supabase.auth.signOut();
       setUser(null);
       setSession(null);
       toast.info('Você saiu do sistema');
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error('Erro no logout:', error);
       toast.error('Erro ao sair do sistema');
     }
   };
