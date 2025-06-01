@@ -140,9 +140,9 @@ export function AuthForm() {
                 </Button>
                 
                 <div className="text-center text-sm text-muted-foreground mt-4 p-3 bg-gray-50 rounded-md">
-                  <p className="font-medium mb-1">Para teste, crie uma nova conta ou use:</p>
-                  <p>Email: admin@musicschool.com</p>
-                  <p>Senha: admin123</p>
+                  <p className="font-medium mb-1">Para administração, use:</p>
+                  <p>Email: renan@innfokus.com.br</p>
+                  <p>Senha: pass@centralmusic</p>
                 </div>
               </form>
             </TabsContent>
@@ -200,7 +200,6 @@ export function AuthForm() {
                     <SelectContent>
                       <SelectItem value="student">Aluno</SelectItem>
                       <SelectItem value="teacher">Professor</SelectItem>
-                      <SelectItem value="admin">Administrador</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

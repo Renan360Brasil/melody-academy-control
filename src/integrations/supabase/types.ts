@@ -87,6 +87,20 @@ export type Database = {
             referencedRelation: "teachers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_classes_course"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_classes_teacher"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers"
+            referencedColumns: ["id"]
+          },
         ]
       }
       courses: {
@@ -123,6 +137,13 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "courses_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_courses_teacher"
             columns: ["teacher_id"]
             isOneToOne: false
             referencedRelation: "teachers"
@@ -182,6 +203,20 @@ export type Database = {
             referencedRelation: "students"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_enrollments_course"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_enrollments_student"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
         ]
       }
       payments: {
@@ -216,6 +251,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_payments_enrollment"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "enrollments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "payments_enrollment_id_fkey"
             columns: ["enrollment_id"]
@@ -338,6 +380,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_teacher_availability_teacher"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "teacher_availability_teacher_id_fkey"
             columns: ["teacher_id"]
             isOneToOne: false
@@ -400,6 +449,10 @@ export type Database = {
           user_role: string
           creator_id: string
         }
+        Returns: string
+      }
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
         Returns: string
       }
       get_user_role: {
