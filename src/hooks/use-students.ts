@@ -2,66 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Student } from '@/types';
 import { toast } from 'sonner';
-
-// Mock data
-const mockStudents: Student[] = [
-  {
-    id: '1',
-    name: 'Ana Silva',
-    email: 'ana.silva@email.com',
-    phone: '(11) 98765-4321',
-    address: 'Av. Paulista, 1000, São Paulo, SP',
-    birthDate: '1998-05-15',
-    status: 'active',
-    courses: ['Piano Intermediário', 'Teoria Musical'],
-    createdAt: '2024-12-10'
-  },
-  {
-    id: '2',
-    name: 'Carlos Mendes',
-    email: 'carlos.mendes@email.com',
-    phone: '(11) 91234-5678',
-    address: 'Rua Augusta, 500, São Paulo, SP',
-    birthDate: '2000-10-20',
-    status: 'active',
-    courses: ['Violão Avançado'],
-    createdAt: '2025-01-05'
-  },
-  {
-    id: '3',
-    name: 'Marina Costa',
-    email: 'marina.costa@email.com',
-    phone: '(11) 99876-5432',
-    address: 'Rua Oscar Freire, 300, São Paulo, SP',
-    birthDate: '1999-02-28',
-    status: 'inactive',
-    courses: ['Bateria Iniciante'],
-    createdAt: '2024-11-15'
-  },
-  {
-    id: '4',
-    name: 'Paulo Rodrigues',
-    email: 'paulo.rodrigues@email.com',
-    phone: '(11) 97654-3210',
-    address: 'Rua da Consolação, 800, São Paulo, SP',
-    birthDate: '2005-07-12',
-    guardian: 'Maria Rodrigues',
-    status: 'active',
-    courses: ['Canto Coral', 'Piano Iniciante'],
-    createdAt: '2025-02-20'
-  },
-  {
-    id: '5',
-    name: 'Juliana Martins',
-    email: 'juliana.martins@email.com',
-    phone: '(11) 98877-6655',
-    address: 'Alameda Santos, 1200, São Paulo, SP',
-    birthDate: '1997-12-03',
-    status: 'active',
-    courses: ['Violino Intermediário'],
-    createdAt: '2025-03-10'
-  }
-];
+import { supabase } from '@/integrations/supabase/client';
 
 export function useStudents() {
   const [students, setStudents] = useState<Student[]>([]);
@@ -70,14 +11,60 @@ export function useStudents() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
 
+  // Load data from Supabase
+  const loadStudents = async () => {
+    try {
+      setIsLoading(true);
+      
+      const { data: studentsData, error } = await supabase
+        .from('students')
+        .select(`
+          id,
+          phone,
+          address,
+          birth_date,
+          guardian,
+          status,
+          email,
+          created_at,
+          profiles!students_profile_id_fkey (
+            name,
+            email
+          )
+        `);
+
+      if (error) {
+        console.error('Error loading students:', error);
+        toast.error('Erro ao carregar alunos');
+        return;
+      }
+
+      // Transform the data to match our Student interface
+      const transformedStudents: Student[] = studentsData?.map(student => ({
+        id: student.id,
+        name: student.profiles?.name || 'Nome não encontrado',
+        email: student.email,
+        phone: student.phone,
+        address: student.address,
+        birthDate: student.birth_date,
+        guardian: student.guardian || undefined,
+        status: student.status as 'active' | 'inactive' | 'suspended',
+        courses: [], // We'll load this separately if needed
+        createdAt: student.created_at
+      })) || [];
+
+      setStudents(transformedStudents);
+    } catch (error) {
+      console.error('Error loading students:', error);
+      toast.error('Erro ao carregar alunos');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Load initial data
   useEffect(() => {
-    // Simulating API call
-    setTimeout(() => {
-      setStudents(mockStudents);
-      setFilteredStudents(mockStudents);
-      setIsLoading(false);
-    }, 500);
+    loadStudents();
   }, []);
 
   // Filter students when search or filter changes
@@ -103,27 +90,19 @@ export function useStudents() {
     setFilteredStudents(filtered);
   };
 
-  const addStudent = (newStudent: Student) => {
-    setStudents(prev => [newStudent, ...prev]);
-    toast.success(`Aluno ${newStudent.name} adicionado com sucesso!`);
+  const addStudent = async (newStudent: Student) => {
+    // In a real implementation, this would create both the profile and student records
+    toast.info('Funcionalidade de adicionar aluno será implementada em breve');
   };
 
-  const updateStudent = (updatedStudent: Student) => {
-    // In a real application, this would make an API call
-    setStudents(prev => 
-      prev.map(student => 
-        student.id === updatedStudent.id ? updatedStudent : student
-      )
-    );
-    toast.success(`Aluno ${updatedStudent.name} atualizado com sucesso!`);
+  const updateStudent = async (updatedStudent: Student) => {
+    // In a real implementation, this would update the student record
+    toast.info('Funcionalidade de editar aluno será implementada em breve');
   };
 
-  const deleteStudent = (studentToDelete: Student) => {
-    // In a real application, this would make an API call
-    setStudents(prev => 
-      prev.filter(student => student.id !== studentToDelete.id)
-    );
-    toast.success(`Aluno ${studentToDelete.name} excluído com sucesso!`);
+  const deleteStudent = async (studentToDelete: Student) => {
+    // In a real implementation, this would delete the student record
+    toast.info('Funcionalidade de excluir aluno será implementada em breve');
   };
 
   return {
@@ -136,6 +115,7 @@ export function useStudents() {
     setStatusFilter,
     addStudent,
     updateStudent,
-    deleteStudent
+    deleteStudent,
+    refreshStudents: loadStudents
   };
 }

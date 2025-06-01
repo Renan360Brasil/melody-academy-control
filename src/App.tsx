@@ -21,6 +21,18 @@ import { toast } from "sonner";
 
 const queryClient = new QueryClient();
 
+// Loading component
+function LoadingScreen() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-music-primary/20 to-music-secondary/20">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-music-primary mx-auto mb-4"></div>
+        <p className="text-lg text-music-primary">Carregando...</p>
+      </div>
+    </div>
+  );
+}
+
 // Componente para proteção de rotas
 function ProtectedRoute({ 
   children, 
@@ -29,7 +41,11 @@ function ProtectedRoute({
   children: React.ReactNode,
   path: string 
 }) {
-  const { isAuthenticated, canAccessRoute } = useAuth();
+  const { isAuthenticated, canAccessRoute, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
   
   if (!isAuthenticated) {
     return <Navigate to="/login" />;
@@ -44,6 +60,12 @@ function ProtectedRoute({
 }
 
 function AppRoutes() {
+  const { isLoading } = useAuth();
+
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
+
   return (
     <Routes>
       <Route path="/login" element={<Login />} />

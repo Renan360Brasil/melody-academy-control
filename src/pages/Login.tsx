@@ -1,24 +1,30 @@
 
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LoginForm } from '@/components/ui-custom/LoginForm';
 import { useAuth } from '@/context/AuthContext';
+import { AuthForm } from '@/components/auth/AuthForm';
 
 export default function Login() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/');
+    if (isAuthenticated && !isLoading) {
+      navigate('/', { replace: true });
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, isLoading, navigate]);
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="w-full max-w-md px-4">
-        <LoginForm />
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-music-primary"></div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  if (isAuthenticated) {
+    return null; // Will redirect
+  }
+
+  return <AuthForm />;
 }

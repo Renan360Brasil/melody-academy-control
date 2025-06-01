@@ -1,44 +1,32 @@
 
-import { createContext, useContext, useState, ReactNode } from 'react';
-import { User, UserRole } from '@/types';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { User, Session } from '@supabase/supabase-js';
+import { UserRole } from '@/types';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+
+interface AuthUser {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  avatar?: string;
+  teacherId?: string;
+  studentId?: string;
+}
 
 interface AuthContextType {
-  user: User | null;
-  login: (email: string, password: string) => void;
-  logout: () => void;
+  user: AuthUser | null;
+  session: Session | null;
+  login: (email: string, password: string) => Promise<{ error?: string }>;
+  logout: () => Promise<void>;
+  signUp: (email: string, password: string, name: string, role: UserRole) => Promise<{ error?: string }>;
   isAuthenticated: boolean;
+  isLoading: boolean;
   canAccessRoute: (route: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-// Mock users for demo
-const MOCK_USERS: User[] = [
-  {
-    id: '1',
-    name: 'Admin User',
-    email: 'admin@musicschool.com',
-    role: 'admin',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=admin'
-  },
-  {
-    id: '2',
-    name: 'Teacher User',
-    email: 'teacher@musicschool.com',
-    role: 'teacher',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=teacher',
-    teacherId: 'teacher-1'
-  },
-  {
-    id: '3',
-    name: 'Student User',
-    email: 'student@musicschool.com',
-    role: 'student',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=student',
-    studentId: 'student-1'
-  }
-];
 
 // Define route permissions for each role
 const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
@@ -48,23 +36,157 @@ const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
 };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const login = (email: string, password: string) => {
-    // For demo, just check if the email exists in our mock data
-    const foundUser = MOCK_USERS.find(u => u.email === email);
-    
-    if (foundUser) {
-      setUser(foundUser);
-      toast.success(`Bem-vindo, ${foundUser.name}!`);
-    } else {
-      toast.error('Credenciais inválidas');
+  useEffect(() => {
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('Auth state change:', event, session);
+        setSession(session);
+        
+        if (session?.user) {
+          // Fetch user profile from our database
+          setTimeout(async () => {
+            try {
+              const { data: profile, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', session.user.id)
+                .single();
+
+              if (error) {
+                console.error('Error fetching profile:', error);
+                toast.error('Erro ao carregar perfil do usuário');
+                return;
+              }
+
+              if (profile) {
+                const authUser: AuthUser = {
+                  id: profile.id,
+                  name: profile.name,
+                  email: profile.email,
+                  role: profile.role as UserRole,
+                  avatar: profile.avatar || undefined
+                };
+
+                // If user is teacher or student, get their specific IDs
+                if (profile.role === 'teacher') {
+                  const { data: teacher } = await supabase
+                    .from('teachers')
+                    .select('id')
+                    .eq('profile_id', profile.id)
+                    .single();
+                  if (teacher) {
+                    authUser.teacherId = teacher.id;
+                  }
+                } else if (profile.role === 'student') {
+                  const { data: student } = await supabase
+                    .from('students')
+                    .select('id')
+                    .eq('profile_id', profile.id)
+                    .single();
+                  if (student) {
+                    authUser.studentId = student.id;
+                  }
+                }
+
+                setUser(authUser);
+              }
+            } catch (error) {
+              console.error('Error in auth state change:', error);
+            }
+          }, 0);
+        } else {
+          setUser(null);
+        }
+        
+        setIsLoading(false);
+      }
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      // The onAuthStateChange will handle setting the session and user
+      if (!session) {
+        setIsLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const login = async (email: string, password: string): Promise<{ error?: string }> => {
+    try {
+      setIsLoading(true);
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) {
+        console.error('Login error:', error);
+        toast.error('Credenciais inválidas');
+        return { error: error.message };
+      }
+
+      toast.success('Login realizado com sucesso!');
+      return {};
+    } catch (error: any) {
+      console.error('Login error:', error);
+      toast.error('Erro ao fazer login');
+      return { error: error.message };
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    toast.info('Você saiu do sistema');
+  const signUp = async (email: string, password: string, name: string, role: UserRole): Promise<{ error?: string }> => {
+    try {
+      setIsLoading(true);
+      const redirectUrl = `${window.location.origin}/`;
+      
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            name,
+            role
+          }
+        }
+      });
+
+      if (error) {
+        console.error('SignUp error:', error);
+        toast.error('Erro ao criar conta');
+        return { error: error.message };
+      }
+
+      toast.success('Conta criada com sucesso! Verifique seu email.');
+      return {};
+    } catch (error: any) {
+      console.error('SignUp error:', error);
+      toast.error('Erro ao criar conta');
+      return { error: error.message };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+      setSession(null);
+      toast.info('Você saiu do sistema');
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast.error('Erro ao sair do sistema');
+    }
   };
 
   const canAccessRoute = (route: string): boolean => {
@@ -74,9 +196,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value = {
     user,
+    session,
     login,
     logout,
-    isAuthenticated: !!user,
+    signUp,
+    isAuthenticated: !!session?.user,
+    isLoading,
     canAccessRoute
   };
 
