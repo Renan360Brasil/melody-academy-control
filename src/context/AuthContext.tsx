@@ -1,9 +1,8 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { UserRole } from '@/types';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, initializeAdmin } from '@/integrations/supabase/client';
 
 interface AuthUser {
   id: string;
@@ -42,6 +41,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     console.log('Configurando auth listener...');
+    
+    // Initialize admin user on startup
+    initializeAdmin().then((result) => {
+      if (result.success) {
+        console.log('Admin inicializado:', result.message);
+      } else {
+        console.error('Erro ao inicializar admin:', result.error);
+      }
+    });
     
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(

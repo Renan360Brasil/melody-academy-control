@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -142,7 +141,7 @@ export function AuthForm() {
                 <div className="text-center text-sm text-muted-foreground mt-4 p-3 bg-gray-50 rounded-md">
                   <p className="font-medium mb-1">Para administração, use:</p>
                   <p>Email: renan@innfokus.com.br</p>
-                  <p>Senha: pass@centralmusic</p>
+                  <p>Senha: pass@admin</p>
                 </div>
               </form>
             </TabsContent>
