@@ -9,131 +9,16 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      profiles: {
-        Row: {
-          avatar: string | null
-          created_at: string | null
-          email: string
-          id: string
-          name: string
-          role: Database["public"]["Enums"]["user_role"]
-          updated_at: string | null
-        }
-        Insert: {
-          avatar?: string | null
-          created_at?: string | null
-          email: string
-          id: string
-          name: string
-          role?: Database["public"]["Enums"]["user_role"]
-          updated_at?: string | null
-        }
-        Update: {
-          avatar?: string | null
-          created_at?: string | null
-          email?: string
-          id?: string
-          name?: string
-          role?: Database["public"]["Enums"]["user_role"]
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      students: {
-        Row: {
-          address: string | null
-          birth_date: string | null
-          created_at: string | null
-          email: string | null
-          guardian: string | null
-          id: string
-          phone: string | null
-          profile_id: string
-          status: Database["public"]["Enums"]["student_status"] | null
-          updated_at: string | null
-        }
-        Insert: {
-          address?: string | null
-          birth_date?: string | null
-          created_at?: string | null
-          email?: string | null
-          guardian?: string | null
-          id?: string
-          phone?: string | null
-          profile_id: string
-          status?: Database["public"]["Enums"]["student_status"] | null
-          updated_at?: string | null
-        }
-        Update: {
-          address?: string | null
-          birth_date?: string | null
-          created_at?: string | null
-          email?: string | null
-          guardian?: string | null
-          id?: string
-          phone?: string | null
-          profile_id?: string
-          status?: Database["public"]["Enums"]["student_status"] | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "students_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      teachers: {
-        Row: {
-          created_at: string | null
-          id: string
-          instruments: string[] | null
-          phone: string | null
-          profile_id: string
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          instruments?: string[] | null
-          phone?: string | null
-          profile_id: string
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          instruments?: string[] | null
-          phone?: string | null
-          profile_id?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "teachers_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+      [_ in never]: never
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      create_admin_user: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      [_ in never]: never
     }
     Enums: {
-      student_status: "active" | "inactive" | "suspended"
-      user_role: "admin" | "teacher" | "student"
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never
@@ -248,9 +133,6 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {
-      student_status: ["active", "inactive", "suspended"],
-      user_role: ["admin", "teacher", "student"],
-    },
+    Enums: {},
   },
 } as const
