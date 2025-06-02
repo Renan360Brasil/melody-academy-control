@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { UserRole } from '@/types';
@@ -19,7 +20,6 @@ interface AuthContextType {
   session: Session | null;
   login: (email: string, password: string) => Promise<{ error?: string }>;
   logout: () => Promise<void>;
-  signUp: (email: string, password: string, name: string, role: UserRole) => Promise<{ error?: string }>;
   isAuthenticated: boolean;
   isLoading: boolean;
   canAccessRoute: (route: string) => boolean;
@@ -178,60 +178,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signUp = async (email: string, password: string, name: string, role: UserRole): Promise<{ error?: string }> => {
-    try {
-      setIsLoading(true);
-      console.log('Iniciando cadastro para:', email, 'como', role);
-      
-      const redirectUrl = `${window.location.origin}/`;
-      
-      const { data, error } = await supabase.auth.signUp({
-        email: email.trim(),
-        password,
-        options: {
-          emailRedirectTo: redirectUrl,
-          data: {
-            name: name.trim(),
-            role
-          }
-        }
-      });
-
-      if (error) {
-        console.error('Erro no cadastro:', error);
-        let errorMessage = 'Erro ao criar conta';
-        
-        if (error.message.includes('already registered')) {
-          errorMessage = 'Este email já está cadastrado';
-        } else if (error.message.includes('Password should be')) {
-          errorMessage = 'A senha deve ter pelo menos 6 caracteres';
-        }
-        
-        toast.error(errorMessage);
-        return { error: error.message };
-      }
-
-      if (data.user) {
-        console.log('Cadastro bem-sucedido para:', data.user.email);
-        
-        // Se o usuário foi confirmado automaticamente, já faz login
-        if (data.user.email_confirmed_at) {
-          toast.success('Conta criada e login realizado com sucesso!');
-        } else {
-          toast.success('Conta criada! Verifique seu email para confirmar.');
-        }
-      }
-      
-      return {};
-    } catch (error: any) {
-      console.error('Erro inesperado no cadastro:', error);
-      toast.error('Erro inesperado ao criar conta');
-      return { error: error.message };
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const logout = async () => {
     try {
       console.log('Fazendo logout...');
@@ -255,7 +201,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     session,
     login,
     logout,
-    signUp,
     isAuthenticated: !!session?.user,
     isLoading,
     canAccessRoute
